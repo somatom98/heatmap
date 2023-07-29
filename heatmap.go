@@ -1,7 +1,8 @@
 package heatmap
 
 import (
-	svg "github.com/ajstarks/svgo"
+	"io"
+
 	"github.com/somatom98/heatmap/models"
 )
 
@@ -21,6 +22,6 @@ type HeatmapService[T Value] interface {
 	Create() models.Heatmap[T]
 }
 
-type HeatmapDrawer[T Value] interface {
-	Draw(models.Heatmap[T]) *svg.SVG
+type HeatmapDrawerService[T Value] interface {
+	Draw(io.Writer)
 }
