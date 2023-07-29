@@ -36,8 +36,10 @@ func heatmapHandler(w http.ResponseWriter, req *http.Request) {
 	s := svg.New(w)
 	s.Start(heatmap.Width, heatmap.Height)
 	s.Rect(0, 0, heatmap.Width, heatmap.Height, "stroke:black")
-	for _, square := range heatmap.Squares {
-		currencyRect(s, square)
+	for _, row := range heatmap.Squares {
+		for _, square := range row.Squares {
+			currencyRect(s, square)
+		}
 	}
 	s.End()
 }
