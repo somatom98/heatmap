@@ -1,6 +1,7 @@
 package services
 
 import (
+	"math"
 	"sort"
 
 	"github.com/somatom98/heatmap"
@@ -64,8 +65,8 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 				Color:  value.Color(),
 				X:      0,
 				Y:      0,
-				Width:  int(value.Area() * ratio / Height),
-				Height: int(value.Area() * ratio / Width),
+				Width:  int(math.Sqrt(value.Area() * ratio * Width / Height)),
+				Height: int(math.Sqrt(value.Area() * ratio * Height / Width)),
 				Info:   value,
 			}
 			group.Squares = append(group.Squares, lastSquare)
@@ -74,8 +75,7 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 
 		spaceLeft := s.spaceLeft(lastSquare)
 		if spaceLeft < value.Area()*ratio {
-			// TODO: Recalculate the height of the last group
-			s.heatmap.Squares = append(s.heatmap.Squares, group)
+			s.heatmap.Squares = append(s.heatmap.Squares, s.fillGaps(group, ratio))
 			group = models.HeatSquareGroup[T]{
 				Direction: constants.Horizontal,
 				Squares:   make([]models.HeatSquare[T], 0),
@@ -83,7 +83,7 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 			lastSquare = models.HeatSquare[T]{
 				Color:  value.Color(),
 				X:      0,
-				Y:      lastSquare.Y + lastSquare.Height,
+				Y:      lastSquare.Y + s.heatmap.Squares[len(s.heatmap.Squares)-1].Squares[len(s.heatmap.Squares[len(s.heatmap.Squares)-1].Squares)-1].Height,
 				Width:  int(value.Area() * ratio / Height),
 				Height: int(value.Area() * ratio / Width),
 				Info:   value,
@@ -108,4 +108,29 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 
 func (s *HeatmapService[T]) spaceLeft(square models.HeatSquare[T]) float64 {
 	return float64((Width - square.X - square.Width) * square.Height)
+}
+
+func (s *HeatmapService[T]) fillGaps(group models.HeatSquareGroup[T], ratio float64) models.HeatSquareGroup[T] {
+	totalVolume := 0.0
+	for _, square := range group.Squares {
+		totalVolume += square.Info.Area() * ratio
+	}
+
+	newHeight := totalVolume / float64(Width)
+
+	newGroup := models.HeatSquareGroup[T]{
+		Direction: constants.Vertical,
+		Squares:   make([]models.HeatSquare[T], 0),
+	}
+
+	for i, square := range group.Squares {
+		if i != 0 {
+			square.Y = group.Squares[i-1].Y + group.Squares[i-1].Height
+		}
+		square.Height = int(newHeight)
+		square.Width = int(square.Info.Area() * ratio / newHeight)
+		newGroup.Squares = append(newGroup.Squares, square)
+	}
+
+	return newGroup
 }
