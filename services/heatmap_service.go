@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	Width  = 500
-	Height = 500
+	Width  = 800
+	Height = 800
 )
 
 type HeatmapService[T heatmap.Value] struct {
@@ -84,8 +84,8 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 				Color:  value.Color(),
 				X:      0,
 				Y:      lastSquare.Y + s.heatmap.Squares[len(s.heatmap.Squares)-1].Squares[len(s.heatmap.Squares[len(s.heatmap.Squares)-1].Squares)-1].Height,
-				Width:  int(value.Area() * ratio / Height),
-				Height: int(value.Area() * ratio / Width),
+				Width:  int(math.Sqrt(value.Area() * ratio * Width / Height)),
+				Height: int(math.Sqrt(value.Area() * ratio * Height / Width)),
 				Info:   value,
 			}
 			group.Squares = append(group.Squares, lastSquare)
@@ -103,7 +103,7 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 		group.Squares = append(group.Squares, lastSquare)
 	}
 
-	s.heatmap.Squares = append(s.heatmap.Squares, group)
+	s.heatmap.Squares = append(s.heatmap.Squares, s.fillGaps(group, ratio))
 }
 
 func (s *HeatmapService[T]) spaceLeft(square models.HeatSquare[T]) float64 {
@@ -123,13 +123,13 @@ func (s *HeatmapService[T]) fillGaps(group models.HeatSquareGroup[T], ratio floa
 		Squares:   make([]models.HeatSquare[T], 0),
 	}
 
-	for i, square := range group.Squares {
-		if i != 0 {
-			square.Y = group.Squares[i-1].Y + group.Squares[i-1].Height
-		}
+	lastSquareX := 0
+	for _, square := range group.Squares {
+		square.X = lastSquareX
 		square.Height = int(newHeight)
 		square.Width = int(square.Info.Area() * ratio / newHeight)
 		newGroup.Squares = append(newGroup.Squares, square)
+		lastSquareX = square.X + square.Width
 	}
 
 	return newGroup
