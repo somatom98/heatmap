@@ -7,6 +7,7 @@ import (
 
 type Value interface {
 	Color() string
+	Area() float64
 }
 
 type HeatsquareRepository[T Value] interface {

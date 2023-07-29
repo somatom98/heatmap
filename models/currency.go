@@ -13,3 +13,7 @@ func (c Currency) Color() string {
 	}
 	return "green"
 }
+
+func (c Currency) Area() float64 {
+	return c.MarketCap
+}
