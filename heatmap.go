@@ -5,14 +5,18 @@ import (
 	"github.com/somatom98/heatmap/models"
 )
 
-type HeatsquareRepository[T any] interface {
-	GetAll() []models.HeatSquare[T]
+type Value interface {
+	Color() string
 }
 
-type HeatmapService[T any] interface {
+type HeatsquareRepository[T Value] interface {
+	GetAll() []T
+}
+
+type HeatmapService[T Value] interface {
 	Create() models.Heatmap[T]
 }
 
-type HeatmapDrawer[T any] interface {
+type HeatmapDrawer[T Value] interface {
 	Draw(models.Heatmap[T]) *svg.SVG
 }
