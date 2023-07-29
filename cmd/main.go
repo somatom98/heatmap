@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	svg "github.com/ajstarks/svgo"
+	"github.com/somatom98/heatmap/models"
 )
 
 const (
@@ -26,7 +27,7 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 	s := svg.New(w)
 	s.Start(Width, Height)
 	s.Rect(0, 0, Width, Height, "stroke:black")
-	currencyRect(s, 10, 10, 200, 100, Currency{
+	currencyRect(s, 10, 10, 200, 100, models.Currency{
 		Name:            "Bitcoin",
 		Price:           10000,
 		Last24Variation: 10,
@@ -35,7 +36,7 @@ func heatmap(w http.ResponseWriter, req *http.Request) {
 	s.End()
 }
 
-func currencyRect(s *svg.SVG, x, y, w, h int, currency Currency) {
+func currencyRect(s *svg.SVG, x, y, w, h int, currency models.Currency) {
 	color := "green"
 	if currency.Last24Variation < 0 {
 		color = "red"
@@ -44,11 +45,4 @@ func currencyRect(s *svg.SVG, x, y, w, h int, currency Currency) {
 	s.Text(x+10, y+20, currency.Name, "font-size:14pt;fill:white")
 	s.Text(x+10, y+40, fmt.Sprintf("%.2f", currency.Price), "font-size:14pt;fill:white")
 	s.Text(x+10, y+60, fmt.Sprintf("%.2f", currency.Last24Variation), "font-size:14pt;fill:white")
-}
-
-type Currency struct {
-	Name            string
-	Price           float64
-	Last24Variation float64
-	MarketCap       float64
 }
