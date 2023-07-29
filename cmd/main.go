@@ -37,18 +37,14 @@ func heatmapHandler(w http.ResponseWriter, req *http.Request) {
 	s.Start(heatmap.Width, heatmap.Height)
 	s.Rect(0, 0, heatmap.Width, heatmap.Height, "stroke:black")
 	for _, square := range heatmap.Squares {
-		currencyRect(s, square.X, square.Y, square.Width, square.Height, square.Info)
+		currencyRect(s, square)
 	}
 	s.End()
 }
 
-func currencyRect(s *svg.SVG, x, y, w, h int, currency models.Currency) {
-	color := "green"
-	if currency.Last24Variation < 0 {
-		color = "red"
-	}
-	s.Rect(x, y, w, h, "fill:"+color+";stroke:black")
-	s.Text(x+10, y+20, currency.Name, "font-size:14pt;fill:white")
-	s.Text(x+10, y+40, fmt.Sprintf("%.2f", currency.Price), "font-size:14pt;fill:white")
-	s.Text(x+10, y+60, fmt.Sprintf("%.2f", currency.Last24Variation), "font-size:14pt;fill:white")
+func currencyRect(s *svg.SVG, square models.HeatSquare[models.Currency]) {
+	s.Rect(square.X, square.Y, square.Width, square.Height, fmt.Sprintf("fill:%s", square.Color))
+	s.Text(square.X+10, square.Y+20, square.Info.Name, "font-size:14pt;fill:white")
+	s.Text(square.X+10, square.Y+40, fmt.Sprintf("%.2f", square.Info.Price), "font-size:14pt;fill:white")
+	s.Text(square.X+10, square.Y+60, fmt.Sprintf("%.2f", square.Info.Last24Variation), "font-size:14pt;fill:white")
 }
