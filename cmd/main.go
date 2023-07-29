@@ -6,33 +6,39 @@ import (
 	"net/http"
 
 	svg "github.com/ajstarks/svgo"
+	"github.com/somatom98/heatmap"
 	"github.com/somatom98/heatmap/models"
+	"github.com/somatom98/heatmap/repositories"
+	"github.com/somatom98/heatmap/services"
 )
 
-const (
-	Width  = 1000
-	Height = 1000
+var (
+	currencyRepository     heatmap.HeatsquareRepository[models.Currency]
+	currencyHeatmapService heatmap.HeatmapService[models.Currency]
 )
 
 func main() {
-	http.Handle("/heatmap", http.HandlerFunc(heatmap))
+	currencyRepository = repositories.NewCurrencyRepository()
+	currencyHeatmapService = services.NewHeatmapService[models.Currency](currencyRepository)
+
+	http.Handle("/heatmap", http.HandlerFunc(heatmapHandler))
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }
 
-func heatmap(w http.ResponseWriter, req *http.Request) {
+func heatmapHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
+
+	heatmap := currencyHeatmapService.Create()
+
 	s := svg.New(w)
-	s.Start(Width, Height)
-	s.Rect(0, 0, Width, Height, "stroke:black")
-	currencyRect(s, 10, 10, 200, 100, models.Currency{
-		Name:            "Bitcoin",
-		Price:           10000,
-		Last24Variation: 10,
-		MarketCap:       1000000000,
-	})
+	s.Start(heatmap.Width, heatmap.Height)
+	s.Rect(0, 0, heatmap.Width, heatmap.Height, "stroke:black")
+	for _, square := range heatmap.Squares {
+		currencyRect(s, square.X, square.Y, square.Width, square.Height, square.Info)
+	}
 	s.End()
 }
 
