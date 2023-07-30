@@ -27,7 +27,7 @@ func (s *HeatmapDrawerService[T]) Draw(w io.Writer) {
 	s.canvas = svg.New(w)
 	s.canvas.Start(heatmap.Width, heatmap.Height)
 
-	s.canvas.Rect(0, 0, heatmap.Width, heatmap.Height, "stroke:black")
+	s.canvas.Rect(0, 0, heatmap.Width, heatmap.Height, "fill:white")
 	for _, row := range heatmap.Squares {
 		for _, square := range row.Squares {
 			s.currencyRect(square)
@@ -43,7 +43,7 @@ func (s *HeatmapDrawerService[T]) currencyRect(square models.HeatSquare[T]) {
 	fontSize := int(math.Min(float64(square.Width), float64(square.Height)) / 5)
 	subFontSize := fontSize / 2
 
-	s.canvas.Rect(square.X, square.Y, square.Width, square.Height, "fill:"+square.Color)
+	s.canvas.Rect(square.X, square.Y, square.Width, square.Height, "fill:"+square.Color+";stroke:black")
 	s.canvas.Text(middleX, middleY, square.Info.DisplayName(), s.textStyle(fontSize))
 	s.canvas.Text(middleX, middleY+2+subFontSize, square.Info.DisplayValue(), s.textStyle(subFontSize))
 	s.canvas.Text(middleX, middleY+2+subFontSize*2, square.Info.DisplaySubValue(), s.textStyle(subFontSize))
