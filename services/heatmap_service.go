@@ -61,45 +61,22 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 	lastSquare := models.HeatSquare[T]{}
 	for _, value := range values {
 		if len(group.Squares) == 0 {
-			lastSquare = models.HeatSquare[T]{
-				Color:  value.Color(),
-				X:      0,
-				Y:      0,
-				Width:  int(math.Sqrt(value.Area() * ratio * Width / Height)),
-				Height: int(math.Sqrt(value.Area() * ratio * Height / Width)),
-				Info:   value,
-			}
+			lastSquare = s.newSquare(value, ratio, lastSquare, group)
 			group.Squares = append(group.Squares, lastSquare)
 			continue
 		}
 
 		spaceLeft := s.spaceLeft(lastSquare, group.Direction)
 		if spaceLeft < value.Area()*ratio {
-			s.heatmap.Squares = append(s.heatmap.Squares, s.fillGaps(group, ratio))
-			group = models.HeatSquareGroup[T]{
-				Direction: constants.Horizontal,
-				Squares:   make([]models.HeatSquare[T], 0),
-			}
-			lastSquare = models.HeatSquare[T]{
-				Color:  value.Color(),
-				X:      0,
-				Y:      lastSquare.Y + s.heatmap.Squares[len(s.heatmap.Squares)-1].Squares[len(s.heatmap.Squares[len(s.heatmap.Squares)-1].Squares)-1].Height,
-				Width:  int(math.Sqrt(value.Area() * ratio * Width / Height)),
-				Height: int(math.Sqrt(value.Area() * ratio * Height / Width)),
-				Info:   value,
-			}
+			group = s.fillGaps(group, ratio)
+			s.heatmap.Squares = append(s.heatmap.Squares, group)
+			lastSquare = s.newSquare(value, ratio, lastSquare, group)
+			group = s.newGroup(group)
 			group.Squares = append(group.Squares, lastSquare)
 			continue
 		}
 
-		lastSquare = models.HeatSquare[T]{
-			Color:  value.Color(),
-			X:      lastSquare.X + lastSquare.Width,
-			Y:      lastSquare.Y,
-			Width:  int(value.Area() * ratio / float64(lastSquare.Height)),
-			Height: int(lastSquare.Height),
-			Info:   value,
-		}
+		lastSquare = s.newGroupSquare(value, ratio, lastSquare, group.Direction)
 		group.Squares = append(group.Squares, lastSquare)
 	}
 
@@ -119,15 +96,17 @@ func (s *HeatmapService[T]) fillGaps(group models.HeatSquareGroup[T], ratio floa
 		totalVolume += square.Info.Area() * ratio
 	}
 
-	newHeight := totalVolume / float64(Width)
-	newWidth := totalVolume / float64(Height)
+	startX, startY := s.startAt(group)
+
+	newHeight := totalVolume / float64(Width-startX)
+	newWidth := totalVolume / float64(Height-startY)
 
 	newGroup := models.HeatSquareGroup[T]{
 		Direction: group.Direction,
 		Squares:   make([]models.HeatSquare[T], 0),
 	}
 
-	lastX, lastY := 0, 0
+	lastX, lastY := startX, startY
 	for _, square := range group.Squares {
 		if group.Direction == constants.Horizontal {
 			square.X = lastX
@@ -144,4 +123,63 @@ func (s *HeatmapService[T]) fillGaps(group models.HeatSquareGroup[T], ratio floa
 	}
 
 	return newGroup
+}
+
+func (s *HeatmapService[T]) startAt(group models.HeatSquareGroup[T]) (int, int) {
+	if len(group.Squares) == 0 {
+		return 0, 0
+	}
+	if group.Direction == constants.Horizontal {
+		return group.Squares[0].X, group.Squares[0].Y + group.Squares[0].Height
+	}
+	return group.Squares[0].X + group.Squares[0].Width, group.Squares[0].Y
+}
+
+func (s *HeatmapService[T]) newGroup(group models.HeatSquareGroup[T]) models.HeatSquareGroup[T] {
+	startX, startY := s.startAt(group)
+
+	newGroup := models.HeatSquareGroup[T]{
+		Squares: make([]models.HeatSquare[T], 0),
+	}
+
+	// choose shorter side
+	if Width-startX < Height-startY {
+		newGroup.Direction = constants.Horizontal
+		return newGroup
+	}
+	newGroup.Direction = constants.Vertical
+	return newGroup
+}
+
+func (s *HeatmapService[T]) newGroupSquare(value T, ratio float64, lastSquare models.HeatSquare[T], direction constants.Direction) models.HeatSquare[T] {
+	if direction == constants.Horizontal {
+		return models.HeatSquare[T]{
+			Color:  value.Color(),
+			X:      lastSquare.X + lastSquare.Width,
+			Y:      lastSquare.Y,
+			Width:  int(value.Area() * ratio / float64(lastSquare.Height)),
+			Height: int(lastSquare.Height),
+			Info:   value,
+		}
+	}
+	return models.HeatSquare[T]{
+		Color:  value.Color(),
+		X:      lastSquare.X,
+		Y:      lastSquare.Y + lastSquare.Height,
+		Width:  int(lastSquare.Width),
+		Height: int(value.Area() * ratio / float64(lastSquare.Width)),
+		Info:   value,
+	}
+}
+
+func (s *HeatmapService[T]) newSquare(value T, ratio float64, lastSquare models.HeatSquare[T], group models.HeatSquareGroup[T]) models.HeatSquare[T] {
+	startX, startY := s.startAt(group)
+	return models.HeatSquare[T]{
+		Color:  value.Color(),
+		X:      startX,
+		Y:      startY,
+		Width:  int(math.Sqrt(value.Area() * ratio * Width / Height)),
+		Height: int(math.Sqrt(value.Area() * ratio * Height / Width)),
+		Info:   value,
+	}
 }

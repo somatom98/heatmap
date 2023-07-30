@@ -32,7 +32,7 @@ func (c *CurrencyRepository) GetAll() []models.Currency {
 			Name:            "XRP",
 			Price:           1.5,
 			Last24Variation: 5,
-			MarketCap:       1000000,
+			MarketCap:       500000,
 		},
 		{
 			FullName:        "Litecoin",
