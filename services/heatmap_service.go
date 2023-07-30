@@ -73,7 +73,7 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 			continue
 		}
 
-		spaceLeft := s.spaceLeft(lastSquare)
+		spaceLeft := s.spaceLeft(lastSquare, group.Direction)
 		if spaceLeft < value.Area()*ratio {
 			s.heatmap.Squares = append(s.heatmap.Squares, s.fillGaps(group, ratio))
 			group = models.HeatSquareGroup[T]{
@@ -106,8 +106,11 @@ func (s *HeatmapService[T]) groupSquares(values []T, ratio float64) {
 	s.heatmap.Squares = append(s.heatmap.Squares, s.fillGaps(group, ratio))
 }
 
-func (s *HeatmapService[T]) spaceLeft(square models.HeatSquare[T]) float64 {
-	return float64((Width - square.X - square.Width) * square.Height)
+func (s *HeatmapService[T]) spaceLeft(square models.HeatSquare[T], direction constants.Direction) float64 {
+	if direction == constants.Horizontal {
+		return float64((Width - square.X - square.Width) * square.Height)
+	}
+	return float64((Height - square.Y - square.Height) * square.Width)
 }
 
 func (s *HeatmapService[T]) fillGaps(group models.HeatSquareGroup[T], ratio float64) models.HeatSquareGroup[T] {
@@ -117,19 +120,27 @@ func (s *HeatmapService[T]) fillGaps(group models.HeatSquareGroup[T], ratio floa
 	}
 
 	newHeight := totalVolume / float64(Width)
+	newWidth := totalVolume / float64(Height)
 
 	newGroup := models.HeatSquareGroup[T]{
-		Direction: constants.Vertical,
+		Direction: group.Direction,
 		Squares:   make([]models.HeatSquare[T], 0),
 	}
 
-	lastSquareX := 0
+	lastX, lastY := 0, 0
 	for _, square := range group.Squares {
-		square.X = lastSquareX
-		square.Height = int(newHeight)
-		square.Width = int(square.Info.Area() * ratio / newHeight)
+		if group.Direction == constants.Horizontal {
+			square.X = lastX
+			square.Height = int(newHeight)
+			square.Width = int(square.Info.Area() * ratio / newHeight)
+			lastX = square.X + square.Width
+		} else {
+			square.Y = lastY
+			square.Width = int(newWidth)
+			square.Height = int(square.Info.Area() * ratio / newWidth)
+			lastY = square.Y + square.Height
+		}
 		newGroup.Squares = append(newGroup.Squares, square)
-		lastSquareX = square.X + square.Width
 	}
 
 	return newGroup
