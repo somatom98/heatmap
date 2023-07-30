@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	Width  = 800
-	Height = 800
+	Width  = 1000
+	Height = 1000
 )
 
 type HeatmapService[T heatmap.Value] struct {

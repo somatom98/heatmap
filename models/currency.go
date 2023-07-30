@@ -1,6 +1,9 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type Currency struct {
 	FullName        string
@@ -11,10 +14,16 @@ type Currency struct {
 }
 
 func (c Currency) Color() string {
+	color := "green"
 	if c.Last24Variation < 0 {
-		return "red"
+		color = "red"
 	}
-	return "green"
+
+	if math.Abs(c.Last24Variation) < 10 {
+		color = "dark" + color
+	}
+
+	return color
 }
 
 func (c Currency) Area() float64 {
@@ -26,9 +35,14 @@ func (c Currency) DisplayName() string {
 }
 
 func (c Currency) DisplayValue() string {
-	return "$" + fmt.Sprintf("%.2f", c.Price)
+	price := "$" + fmt.Sprintf("%.2f", c.Price)
+	variation := fmt.Sprintf("%.2f", c.Last24Variation) + "%"
+	if c.Last24Variation > 0 {
+		variation = "+" + variation
+	}
+	return price + " (" + variation + ")"
 }
 
 func (c Currency) DisplaySubValue() string {
-	return fmt.Sprintf("%.2f", c.Last24Variation) + "%"
+	return "$" + fmt.Sprintf("%.2f", c.MarketCap)
 }

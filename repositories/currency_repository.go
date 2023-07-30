@@ -45,7 +45,7 @@ func (c *CurrencyRepository) GetAll() []models.Currency {
 			FullName:        "Monero",
 			Name:            "XMR",
 			Price:           50,
-			Last24Variation: 1,
+			Last24Variation: 11.4,
 			MarketCap:       100000,
 		},
 		{
